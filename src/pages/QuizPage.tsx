@@ -17,14 +17,13 @@ export const QuizPage: React.FC = () => {
   
   const problem = currentProblem();
   const prog = progress();
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isTimerRunning, setIsTimerRunning] = useState(quizState === 'playing');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   useEffect(() => {
-    if (quizState === 'playing') setIsTimerRunning(true);
-    else setIsTimerRunning(false);
-  }, [quizState, problem?.id]);
+    setIsTimerRunning(quizState === 'playing');
+  }, [quizState]);
   
   useEffect(() => {
     return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };

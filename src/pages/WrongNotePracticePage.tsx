@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { useWrongNoteStore, useQuizStore, useProgressStore } from '../stores';
+import { useWrongNoteStore, useQuizStore } from '../stores';
 import { NumberPad } from '../components/NumberPad';
 import { ProgressBar } from '../components/ProgressBar';
 import { Timer } from '../components/Timer';
@@ -13,7 +13,6 @@ export const WrongNotePracticePage: React.FC = () => {
   const navigate = useNavigate();
   const { wrongNotes, loadWrongNotes } = useWrongNoteStore();
   const { config } = useQuizStore();
-  const { loadProgress } = useProgressStore();
   
   const [problems, setProblems] = useState<Problem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -21,7 +20,7 @@ export const WrongNotePracticePage: React.FC = () => {
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [startTime, setStartTime] = useState(0);
+  const startTimeRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   useEffect(() => { loadWrongNotes(); }, [loadWrongNotes]);
@@ -38,7 +37,7 @@ export const WrongNotePracticePage: React.FC = () => {
     }
     
     setProblems(wrongProblems);
-    setStartTime(Date.now());
+    startTimeRef.current = Date.now();
     setIsTimerRunning(true);
   }, [wrongNotes, config.questionCount]);
   
@@ -53,7 +52,7 @@ export const WrongNotePracticePage: React.FC = () => {
     const problem = problems[currentIndex];
     const userAnswer = parseInt(currentAnswer, 10);
     const isCorrect = !isNaN(userAnswer) && userAnswer === problem.answer;
-    const timeSpent = Math.round((Date.now() - startTime) / 1000);
+    const timeSpent = Math.round((Date.now() - startTimeRef.current) / 1000);
     
     const answer: Answer = {
       problemId: problem.id,
@@ -78,8 +77,8 @@ export const WrongNotePracticePage: React.FC = () => {
   const finishPractice = (allAnswers: Answer[]) => {
     setIsTimerRunning(false);
     const correctCount = allAnswers.filter(a => a.isCorrect).length;
-    const totalTime = Math.round((Date.now() - startTime) / 1000);
-    const score = calculateScore(correctCount, totalTime, problems.length);
+    const totalTime = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const score = calculateScore(correctCount);
     
     navigate('/result', { 
       state: { 

@@ -66,7 +66,7 @@ const OperationRow: React.FC<OperationRowProps> = ({ label, icon, enabled, range
   
   React.useEffect(() => {
     if (enabled && !expanded) setExpanded(true);
-  }, [enabled]);
+  }, [enabled, expanded]);
   
   return (
     <div className={`bg-white rounded-xl transition-all ${enabled ? 'border-2 border-indigo-600 shadow-md' : 'border border-gray-200'}`}>

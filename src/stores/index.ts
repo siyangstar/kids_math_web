@@ -112,7 +112,7 @@ export const useQuizStore = create<QuizStore>()(
         const { problems, answers, config, startTime } = get();
         const correctCount = answers.filter(a => a.isCorrect).length;
         const totalTime = Math.round((Date.now() - startTime) / 1000);
-        const score = calculateScore(correctCount, totalTime, problems.length);
+        const score = calculateScore(correctCount);
         
         const result: SessionResult = {
           id: `session_${Date.now()}`,
@@ -264,6 +264,7 @@ interface WrongNoteStore {
   wrongNotes: WrongNote[];
   loadWrongNotes: () => void;
   removeWrongNote: (id: string) => void;
+  removeWrongNotes: (ids: string[]) => void;
   markAsMastered: (id: string) => void;
   updateWrongNote: (id: string, updates: Partial<WrongNote>) => void;
   clearAllWrongNotes: () => void;
@@ -281,6 +282,12 @@ export const useWrongNoteStore = create<WrongNoteStore>()(
       
       removeWrongNote: (id) => {
         storage.removeWrongNote(id);
+        const wrongNotes = storage.getWrongNotes();
+        set({ wrongNotes });
+      },
+      
+      removeWrongNotes: (ids) => {
+        ids.forEach(id => storage.removeWrongNote(id));
         const wrongNotes = storage.getWrongNotes();
         set({ wrongNotes });
       },
@@ -309,6 +316,7 @@ export const useWrongNoteStore = create<WrongNoteStore>()(
 interface HistoryStore {
   history: SessionResult[];
   loadHistory: () => void;
+  removeHistoryItems: (ids: string[]) => void;
   clearAllHistory: () => void;
 }
 
@@ -319,6 +327,12 @@ export const useHistoryStore = create<HistoryStore>()(
       
       loadHistory: () => {
         const history = storage.getSessionHistory();
+        set({ history });
+      },
+      
+      removeHistoryItems: (ids) => {
+        const history = storage.getSessionHistory().filter(h => !ids.includes(h.id));
+        storage.setSessionHistory(history);
         set({ history });
       },
       

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X, Clock, Trophy, ChevronRight, Eraser } from 'lucide-react';
+import { ArrowLeft, Check, X, Clock, Trophy, ChevronRight, Eraser, Trash2, XCircle } from 'lucide-react';
 import { useHistoryStore } from '../stores';
 import { Button } from '../components/Button';
 import { SessionResult } from '../types';
@@ -79,8 +79,10 @@ const HistoryDetailModal: React.FC<{
 
 export const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { history, loadHistory, clearAllHistory } = useHistoryStore();
+  const { history, loadHistory, clearAllHistory, removeHistoryItems } = useHistoryStore();
   const [selectedSession, setSelectedSession] = useState<SessionResult | null>(null);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   React.useEffect(() => {
     loadHistory();
@@ -98,6 +100,38 @@ export const HistoryPage: React.FC = () => {
     }
   };
   
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+  
+  const selectAll = () => {
+    if (selectedIds.size === history.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(history.map(h => h.id)));
+    }
+  };
+  
+  const handleBatchDelete = () => {
+    if (selectedIds.size === 0) return;
+    if (window.confirm(`确定要删除选中的 ${selectedIds.size} 条记录吗？`)) {
+      removeHistoryItems(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      setIsSelectMode(false);
+    }
+  };
+  
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
       <div className="max-w-2xl mx-auto">
@@ -109,19 +143,64 @@ export const HistoryPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             历史记录
           </h1>
-          <div />
+          <div className="w-16" />
         </div>
         
         {history.length > 0 && (
-          <div className="mb-6 flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleClearAll}
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              <Eraser className="w-4 h-4 mr-1" /> 清空所有
-            </Button>
+          <div className="mb-6 flex justify-between items-center">
+            {!isSelectMode ? (
+              <>
+                <div />
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsSelectMode(true)}
+                    className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                  >
+                    <Check className="w-4 h-4 mr-1" /> 批量选择
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleClearAll}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <Eraser className="w-4 h-4 mr-1" /> 清空所有
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={exitSelectMode}
+                  className="text-gray-600"
+                >
+                  <XCircle className="w-4 h-4 mr-1" /> 取消
+                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={selectAll}
+                    className="text-gray-600 border-gray-200"
+                  >
+                    {selectedIds.size === history.length ? '取消全选' : '全选'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleBatchDelete}
+                    disabled={selectedIds.size === 0}
+                    className="text-red-600 border-red-200 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> 删除 ({selectedIds.size})
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
         
@@ -134,35 +213,53 @@ export const HistoryPage: React.FC = () => {
           <div className="space-y-4">
             {history.map((session) => {
               const accuracy = Math.round((session.correctCount / session.problems.length) * 100);
+              const isSelected = selectedIds.has(session.id);
+              
               return (
-                <button
+                <div
                   key={session.id}
-                  onClick={() => setSelectedSession(session)}
-                  className="w-full bg-white rounded-2xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all text-left"
+                  className={`relative bg-white rounded-2xl p-5 border shadow-sm transition-all ${
+                    isSelectMode && isSelected 
+                      ? 'border-indigo-500 ring-2 ring-indigo-200' 
+                      : 'border-gray-200 hover:shadow-md'
+                  }`}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(session.date).toLocaleDateString('zh-CN')}
+                  {isSelectMode && (
+                    <div 
+                      className="absolute top-4 left-4 w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors"
+                      onClick={() => toggleSelect(session.id)}
+                    >
+                      <div className={`w-4 h-4 rounded-full ${isSelected ? 'bg-indigo-600' : 'bg-transparent'}`} />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => isSelectMode ? toggleSelect(session.id) : setSelectedSession(session)}
+                    className={`w-full text-left ${isSelectMode ? 'pl-8' : ''}`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(session.date).toLocaleDateString('zh-CN')}
+                        </div>
+                        <div className="font-bold text-gray-900">{session.problems.length} 道题</div>
                       </div>
-                      <div className="font-bold text-gray-900">{session.problems.length} 道题</div>
+                      <div className="flex items-center gap-2">
+                        <div className={`text-2xl font-bold ${
+                          accuracy === 100 ? 'text-emerald-600' :
+                          accuracy >= 80 ? 'text-indigo-600' :
+                          accuracy >= 60 ? 'text-amber-600' : 'text-red-600'
+                        }`}>{accuracy}%</div>
+                        {!isSelectMode && <ChevronRight className="w-5 h-5 text-gray-400" />}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className={`text-2xl font-bold ${
-                        accuracy === 100 ? 'text-emerald-600' :
-                        accuracy >= 80 ? 'text-indigo-600' :
-                        accuracy >= 60 ? 'text-amber-600' : 'text-red-600'
-                      }`}>{accuracy}%</div>
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    <div className="flex gap-4 text-sm">
+                      <div className="flex items-center gap-1"><Check className="w-4 h-4 text-emerald-600" /><span className="text-emerald-600">{session.correctCount}</span></div>
+                      <div className="flex items-center gap-1"><X className="w-4 h-4 text-red-600" /><span className="text-red-600">{session.problems.length - session.correctCount}</span></div>
+                      <div className="flex items-center gap-1"><Clock className="w-4 h-4 text-gray-400" /><span className="text-gray-600">{formatTime(session.totalTime)}</span></div>
+                      <div className="flex items-center gap-1"><Trophy className="w-4 h-4 text-amber-600" /><span className="text-amber-600">{session.score}分</span></div>
                     </div>
-                  </div>
-                  <div className="flex gap-4 text-sm">
-                    <div className="flex items-center gap-1"><Check className="w-4 h-4 text-emerald-600" /><span className="text-emerald-600">{session.correctCount}</span></div>
-                    <div className="flex items-center gap-1"><X className="w-4 h-4 text-red-600" /><span className="text-red-600">{session.problems.length - session.correctCount}</span></div>
-                    <div className="flex items-center gap-1"><Clock className="w-4 h-4 text-gray-400" /><span className="text-gray-600">{formatTime(session.totalTime)}</span></div>
-                    <div className="flex items-center gap-1"><Trophy className="w-4 h-4 text-amber-600" /><span className="text-amber-600">{session.score}分</span></div>
-                  </div>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>

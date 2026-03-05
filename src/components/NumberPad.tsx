@@ -7,8 +7,6 @@ interface NumberPadProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
-  showAnswer?: boolean;
-  isCorrect?: boolean | null;
 }
 
 export const NumberPad: React.FC<NumberPadProps> = ({
@@ -16,8 +14,6 @@ export const NumberPad: React.FC<NumberPadProps> = ({
   onChange,
   onSubmit,
   disabled = false,
-  showAnswer = false,
-  isCorrect = null,
 }) => {
   const handleNumber = (num: string) => {
     if (value.length < 6) {

@@ -142,12 +142,13 @@ function generateMixedProblem(config: SessionConfig): Problem | null {
           }
           answer = prevAnswer - num;
           break;
-        case '×':
+        case '×': {
           const smallNum = randomInRange(1, 12);
           answer = prevAnswer * smallNum;
           expression += ` ${op} ${smallNum}`;
           ops.push(op);
           continue;
+        }
       }
       expression += ` ${op} ${num}`;
       ops.push(op);
@@ -222,9 +223,6 @@ export function generateProblems(config: SessionConfig): Problem[] {
 }
 
 // Calculate score
-export function calculateScore(correctCount: number, totalTime: number, totalProblems: number): number {
-  if (totalProblems === 0) return 0;
-  const accuracy = correctCount / totalProblems;
-  const timeBonus = Math.max(0, 100 - totalTime) / 100;
-  return Math.round(accuracy * 100 + timeBonus * 20);
+export function calculateScore(correctCount: number): number {
+  return correctCount * 10;
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, PartyPopper, Check, Trash2, ArrowLeft, ChevronDown, ChevronRight, RotateCcw, Eraser } from 'lucide-react';
+import { FileText, PartyPopper, Check, Trash2, ArrowLeft, ChevronDown, ChevronRight, RotateCcw, Eraser, XCircle } from 'lucide-react';
 import { useWrongNoteStore } from '../stores';
 import { Button } from '../components/Button';
 import { WrongNote } from '../types';
@@ -9,6 +9,7 @@ interface GroupedWrongNote {
   expression: string;
   answer: number;
   entries: WrongNote[];
+  id: string; // For selection
 }
 
 interface WrongNoteGroupProps {
@@ -17,6 +18,9 @@ interface WrongNoteGroupProps {
   onRemove: (entries: WrongNote[]) => void;
   onUnmarkMastered?: (entries: WrongNote[]) => void;
   showAsMastered?: boolean;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (groupId: string) => void;
 }
 
 const WrongNoteGroup: React.FC<WrongNoteGroupProps> = ({ 
@@ -24,7 +28,10 @@ const WrongNoteGroup: React.FC<WrongNoteGroupProps> = ({
   onMastered, 
   onRemove, 
   onUnmarkMastered,
-  showAsMastered = false 
+  showAsMastered = false,
+  isSelectMode = false,
+  isSelected = false,
+  onToggleSelect
 }) => {
   const [showDetails, setShowDetails] = React.useState(false);
   const isMultipleErrors = group.entries.length > 1;
@@ -36,94 +43,112 @@ const WrongNoteGroup: React.FC<WrongNoteGroupProps> = ({
   };
   
   return (
-    <div className={`bg-white rounded-2xl p-5 border shadow-sm ${
-      showAsMastered 
-        ? 'border-gray-200 border-l-4 border-l-emerald-500 opacity-75' 
-        : 'border-gray-200 border-l-4 border-l-red-500'
-    }`}>
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <div className={`text-xl font-semibold mb-2 ${
-            showAsMastered ? 'text-gray-600' : 'text-gray-900'
-          }`}>
-            {group.expression} = {group.answer}
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            {isMultipleErrors && (
-              <span className={`px-2 py-0.5 rounded-full font-medium ${
-                showAsMastered 
-                  ? 'bg-emerald-100 text-emerald-700' 
-                  : 'bg-red-100 text-red-700'
-              }`}>
-                错误 {group.entries.length} 次
+    <div className={`relative bg-white rounded-2xl p-5 border shadow-sm transition-all ${
+        isSelectMode && isSelected 
+          ? 'border-indigo-500 ring-2 ring-indigo-200' 
+          : showAsMastered 
+            ? 'border-gray-200 border-l-4 border-l-emerald-500 opacity-75' 
+            : 'border-gray-200 border-l-4 border-l-red-500'
+      } ${isSelectMode ? 'cursor-pointer' : ''}`}
+      onClick={() => isSelectMode && onToggleSelect && onToggleSelect(group.id)}
+    >
+      {isSelectMode && (
+        <div 
+          className="absolute top-4 left-4 w-6 h-6 rounded-full border-2 border-indigo-400 flex items-center justify-center transition-colors z-10 bg-white"
+        >
+          {isSelected && <div className="w-3 h-3 rounded-full bg-indigo-600" />}
+        </div>
+      )}
+      <div className={`${isSelectMode ? 'pl-8' : ''}`}>
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <div className={`text-xl font-semibold mb-2 ${
+              showAsMastered ? 'text-gray-600' : 'text-gray-900'
+            }`}>
+              {group.expression} = {group.answer}
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              {isMultipleErrors && (
+                <span className={`px-2 py-0.5 rounded-full font-medium ${
+                  showAsMastered 
+                    ? 'bg-emerald-100 text-emerald-700' 
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  错误 {group.entries.length} 次
+                </span>
+              )}
+              <span className="text-gray-500">
+                最近答案：{latestEntry.userAnswer}
               </span>
-            )}
-            <span className="text-gray-500">
-              最近答案：{latestEntry.userAnswer}
-            </span>
-            <span className="text-gray-400 text-xs">
-              {formatDate(latestEntry.lastWrongDate)}
-            </span>
+              <span className="text-gray-400 text-xs">
+                {formatDate(latestEntry.lastWrongDate)}
+              </span>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          {showAsMastered ? (
-            <>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => onUnmarkMastered && onUnmarkMastered(group.entries)}
-                className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-              >
-                <RotateCcw className="w-4 h-4 mr-1" /> 重新复习
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => onRemove(group.entries)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="primary" size="sm" onClick={() => onMastered(group.entries)}>
-                <Check className="w-4 h-4 mr-1" /> 已掌握
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => onRemove(group.entries)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {isMultipleErrors && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-full"
-          >
-            {showDetails ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-            查看错误历史 ({group.entries.length}次)
-          </button>
           
-          {showDetails && (
-            <div className="mt-3 space-y-2">
-              {group.entries.map((entry, index) => (
-                <div key={entry.id} className="flex justify-between items-center text-sm bg-red-50 rounded-lg px-3 py-2">
-                  <span className="text-red-600 font-medium">答案：{entry.userAnswer}</span>
-                  <span className="text-gray-400 text-xs">{formatDate(entry.lastWrongDate)}</span>
-                </div>
-              ))}
+          {!isSelectMode && (
+            <div className="flex gap-2">
+              {showAsMastered ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => onUnmarkMastered && onUnmarkMastered(group.entries)}
+                    className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" /> 重新复习
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onRemove(group.entries)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="primary" size="sm" onClick={() => onMastered(group.entries)}>
+                    <Check className="w-4 h-4 mr-1" /> 已掌握
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => onRemove(group.entries)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
-      )}
+        
+        {isMultipleErrors && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 w-full"
+            >
+              {showDetails ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              查看错误历史 ({group.entries.length}次)
+            </button>
+            
+            {showDetails && (
+              <div className="mt-3 space-y-2">
+                {group.entries.map((entry) => (
+                  <div key={entry.id} className="flex justify-between items-center text-sm bg-red-50 rounded-lg px-3 py-2">
+                    <span className="text-red-600 font-medium">答案：{entry.userAnswer}</span>
+                    <span className="text-gray-400 text-xs">{formatDate(entry.lastWrongDate)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export const WrongNotesPage: React.FC = () => {
   const navigate = useNavigate();
-  const { wrongNotes, loadWrongNotes, removeWrongNote, markAsMastered, updateWrongNote, clearAllWrongNotes } = useWrongNoteStore();
+  const { wrongNotes, loadWrongNotes, removeWrongNote, markAsMastered, updateWrongNote, clearAllWrongNotes, removeWrongNotes } = useWrongNoteStore();
+  
+  const [isSelectMode, setIsSelectMode] = React.useState(false);
+  const [selectedGroupIds, setSelectedGroupIds] = React.useState<Set<string>>(new Set());
   
   React.useEffect(() => {
     loadWrongNotes();
@@ -162,6 +187,7 @@ export const WrongNotesPage: React.FC = () => {
           expression: note.problem.expression,
           answer: note.problem.answer,
           entries: [],
+          id: key,
         });
       }
       
@@ -180,6 +206,47 @@ export const WrongNotesPage: React.FC = () => {
   const activeGroups = groupedNotes.filter(g => !g.entries[0].mastered);
   const masteredGroups = groupedNotes.filter(g => g.entries[0].mastered);
   
+  const toggleSelect = (groupId: string) => {
+    const newSelected = new Set(selectedGroupIds);
+    if (newSelected.has(groupId)) {
+      newSelected.delete(groupId);
+    } else {
+      newSelected.add(groupId);
+    }
+    setSelectedGroupIds(newSelected);
+  };
+  
+  const selectAll = (groups: GroupedWrongNote[]) => {
+    if (selectedGroupIds.size === groups.length) {
+      setSelectedGroupIds(new Set());
+    } else {
+      setSelectedGroupIds(new Set(groups.map(g => g.id)));
+    }
+  };
+  
+  const handleBatchDelete = () => {
+    if (selectedGroupIds.size === 0) return;
+    
+    // Collect all entry IDs from selected groups
+    const idsToDelete: string[] = [];
+    groupedNotes.forEach(group => {
+      if (selectedGroupIds.has(group.id)) {
+        group.entries.forEach(entry => idsToDelete.push(entry.id));
+      }
+    });
+    
+    if (window.confirm(`确定要删除选中的 ${selectedGroupIds.size} 组错题（共 ${idsToDelete.length} 条记录）吗？`)) {
+      removeWrongNotes(idsToDelete);
+      setSelectedGroupIds(new Set());
+      setIsSelectMode(false);
+    }
+  };
+  
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedGroupIds(new Set());
+  };
+  
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
       <div className="max-w-2xl mx-auto">
@@ -191,19 +258,64 @@ export const WrongNotesPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <FileText className="w-6 h-6" /> 错题本
           </h1>
-          <div />
+          <div className="w-16" />
         </div>
         
         {wrongNotes.length > 0 && (
-          <div className="mb-6 flex justify-end">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleClearAll}
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              <Eraser className="w-4 h-4 mr-1" /> 清空所有
-            </Button>
+          <div className="mb-6 flex justify-between items-center">
+            {!isSelectMode ? (
+              <>
+                <div />
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsSelectMode(true)}
+                    className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                  >
+                    <Check className="w-4 h-4 mr-1" /> 批量选择
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleClearAll}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <Eraser className="w-4 h-4 mr-1" /> 清空所有
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={exitSelectMode}
+                  className="text-gray-600"
+                >
+                  <XCircle className="w-4 h-4 mr-1" /> 取消
+                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => selectAll(activeGroups.length > 0 ? activeGroups : masteredGroups)}
+                    className="text-gray-600 border-gray-200"
+                  >
+                    {selectedGroupIds.size === (activeGroups.length > 0 ? activeGroups.length : masteredGroups.length) ? '取消全选' : '全选'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleBatchDelete}
+                    disabled={selectedGroupIds.size === 0}
+                    className="text-red-600 border-red-200 hover:bg-red-50 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> 删除 ({selectedGroupIds.size})
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
         
@@ -220,13 +332,16 @@ export const WrongNotesPage: React.FC = () => {
                   需要复习 ({activeGroups.length})
                 </h2>
                 <div className="space-y-4">
-                  {activeGroups.map((group, idx) => (
+                  {activeGroups.map((group) => (
                     <WrongNoteGroup
-                      key={`${group.expression}_${group.answer}_${idx}`}
+                      key={group.id}
                       group={group}
                       onMastered={handleMasteredGroup}
                       onRemove={handleRemoveGroup}
                       showAsMastered={false}
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedGroupIds.has(group.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   ))}
                 </div>
@@ -239,14 +354,17 @@ export const WrongNotesPage: React.FC = () => {
                   已掌握 ({masteredGroups.length})
                 </h2>
                 <div className="space-y-4">
-                  {masteredGroups.map((group, idx) => (
+                  {masteredGroups.map((group) => (
                     <WrongNoteGroup
-                      key={`${group.expression}_${group.answer}_${idx}`}
+                      key={group.id}
                       group={group}
                       onMastered={handleMasteredGroup}
                       onRemove={handleRemoveGroup}
                       onUnmarkMastered={handleUnmarkMasteredGroup}
                       showAsMastered={true}
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedGroupIds.has(group.id)}
+                      onToggleSelect={toggleSelect}
                     />
                   ))}
                 </div>

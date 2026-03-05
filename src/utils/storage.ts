@@ -39,6 +39,10 @@ export function addSessionResult(result: SessionResult): void {
   setItem(STORAGE_KEYS.SESSION_HISTORY, trimmed);
 }
 
+export function setSessionHistory(history: SessionResult[]): void {
+  setItem(STORAGE_KEYS.SESSION_HISTORY, history);
+}
+
 export function getWrongNotes(): WrongNote[] {
   return getItem<WrongNote[]>(STORAGE_KEYS.WRONG_NOTES, []);
 }
