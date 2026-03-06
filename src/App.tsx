@@ -10,7 +10,7 @@ import { WrongNotePracticePage } from './pages/WrongNotePracticePage';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/kids_math">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/quiz" element={<QuizPage />} />
