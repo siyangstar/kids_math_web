@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Play, Target, Settings, History, FileText, Star, Trophy, Zap, Flame } from 'lucide-react';
 import { Button } from '../components/Button';
 import { useProgressStore, useQuizStore, useWrongNoteStore } from '../stores';
+import { LEVEL_POINTS_DIVISOR } from '../core/math/generator';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export const HomePage: React.FC = () => {
               </div>
               <div>
                 <div className="text-base sm:text-xl md:text-2xl font-bold text-gray-900">Lv.{progress.level}</div>
-                <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">经验值 {progress.points} / {progress.level * 500}</div>
+                <div className="text-[10px] sm:text-xs md:text-sm text-gray-600">经验值 {progress.points} / {progress.level * LEVEL_POINTS_DIVISOR}</div>
               </div>
             </div>
             <div className="text-right">
@@ -56,7 +57,7 @@ export const HomePage: React.FC = () => {
           <div className="h-1.5 sm:h-2 bg-gray-100 rounded-full overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all"
-              style={{ width: `${(progress.points % (progress.level * 500)) / (progress.level * 500) * 100}%` }}
+              style={{ width: `${(progress.points % (progress.level * LEVEL_POINTS_DIVISOR)) / (progress.level * LEVEL_POINTS_DIVISOR) * 100}%` }}
             />
           </div>
         </div>

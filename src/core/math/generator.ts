@@ -1,5 +1,13 @@
 import { Problem, Operation, SessionConfig, OperationRange } from '../../types';
 
+// Constants for problem generation
+export const MAX_TRIES_SINGLE = 500;
+export const MAX_TRIES_MIXED = 3000;
+export const MAX_INPUT_LENGTH = 6;
+export const PARENTHESES_PROBABILITY = 0.4;
+export const LEVEL_POINTS_DIVISOR = 500;
+export const MAX_HISTORY_ITEMS = 100;
+
 // AST Node types for mathematical expressions
 type ASTNode = 
   | { type: 'val', value: number }
@@ -10,7 +18,7 @@ function randomInRange(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Strictly check if addition has carry on any digit
+// Check if addition requires carry on any digit
 function hasCarry(a: number, b: number): boolean {
   let carry = 0;
   let num1 = Math.abs(a);
@@ -26,11 +34,11 @@ function hasCarry(a: number, b: number): boolean {
   return false;
 }
 
-// Strictly check if subtraction requires borrow on any digit
+// Check if subtraction requires borrow on any digit
 function hasBorrow(a: number, b: number): boolean {
   let num1 = Math.abs(a);
   let num2 = Math.abs(b);
-  if (num1 < num2) return false; // Negative result handled by allowNegative flag
+  if (num1 < num2) return false;
   
   while (num1 > 0 || num2 > 0) {
     if ((num1 % 10) < (num2 % 10)) return true;
@@ -50,14 +58,13 @@ function getRange(op: Operation, config: SessionConfig): OperationRange {
   }
 }
 
-// Evaluate an AST node, returning the computed value and whether it violates any config rules
+// Evaluate AST and validate against configuration rules
 function evaluateAST(node: ASTNode, config: SessionConfig): { value: number, valid: boolean } {
   if (node.type === 'val') return { value: node.value, valid: true };
 
   const left = evaluateAST(node.left, config);
   const right = evaluateAST(node.right, config);
 
-  // If sub-expressions violate rules, the whole expression is invalid
   if (!left.valid || !right.valid) return { value: 0, valid: false };
 
   const l = left.value;
@@ -75,7 +82,7 @@ function evaluateAST(node: ASTNode, config: SessionConfig): { value: number, val
       return { value: l * r, valid: true };
     case '÷':
       if (r === 0) return { value: 0, valid: false };
-      if (l % r !== 0) return { value: 0, valid: false }; // Must be perfectly divisible
+      if (l % r !== 0) return { value: 0, valid: false };
       return { value: l / r, valid: true };
     default:
       return { value: 0, valid: false };
@@ -86,7 +93,7 @@ function evaluateAST(node: ASTNode, config: SessionConfig): { value: number, val
 function genSingleOpAST(op: Operation, config: SessionConfig): ASTNode {
   const range = getRange(op, config);
   if (op === '÷') {
-    // For division, generate divisor and quotient to ensure perfect division
+    // Generate divisor and quotient to ensure integer division
     const divisor = randomInRange(Math.max(1, range.min), range.max);
     const quotient = randomInRange(Math.max(1, range.min), range.max);
     return { type: 'op', op, left: { type: 'val', value: divisor * quotient }, right: { type: 'val', value: divisor } };
@@ -96,10 +103,9 @@ function genSingleOpAST(op: Operation, config: SessionConfig): ASTNode {
   return { type: 'op', op, left: { type: 'val', value: a }, right: { type: 'val', value: b } };
 }
 
-// Generate a 2-operand problem
+// Generate a 2-operand problem with rejection sampling
 function generateSingleProblem(op: Operation, config: SessionConfig, existingProblems: Set<string>): Problem | null {
-  const maxTries = 500;
-  for (let i = 0; i < maxTries; i++) {
+  for (let i = 0; i < MAX_TRIES_SINGLE; i++) {
     const ast = genSingleOpAST(op, config);
     const res = evaluateAST(ast, config);
     
@@ -128,21 +134,18 @@ function doesRequireParentheses(op1: Operation, op2: Operation, isLeftHeavy: boo
   const p2 = precedence[op2];
 
   if (isLeftHeavy) {
-    // Structure: (L op1 M) op2 R
-    // Required if op1 has lower precedence than op2. Example: (2+3)*4
+    // (L op1 M) op2 R: parentheses required if op1 has lower precedence
     if (p1 < p2) return true;
     return false;
   } else {
-    // Structure: L op1 (M op2 R)
-    // Required if op2 has lower precedence than op1. Example: 4*(2+3)
-    // Or if same precedence and op1 is '-' or '÷'. Example: 10-(2+3) or 10÷(2×5)
+    // L op1 (M op2 R): parentheses required if op2 has lower precedence or same precedence with non-associative op1
     if (p2 < p1) return true;
     if (p1 === p2 && (op1 === '-' || op1 === '÷')) return true;
     return false;
   }
 }
 
-// Format AST to string, adding parentheses if required
+// Format AST to string with parentheses as needed
 function formatAST(ast: ASTNode, requiresParen: boolean, isLeftHeavy: boolean): string {
   if (ast.type === 'val') return ast.value.toString();
   
@@ -171,33 +174,27 @@ function formatAST(ast: ASTNode, requiresParen: boolean, isLeftHeavy: boolean): 
   }
 }
 
-// Generate a 3-operand mixed problem
+// Generate a 3-operand mixed problem using pure rejection sampling
 function generateMixedProblem(config: SessionConfig, existingProblems: Set<string>): Problem | null {
   const ops = config.enabledOperations;
   if (ops.length === 0) return null;
 
-  const maxTries = 5000; // Increased significantly for pure rejection sampling
-  for (let attempt = 0; attempt < maxTries; attempt++) {
+  for (let attempt = 0; attempt < MAX_TRIES_MIXED; attempt++) {
     const op1 = ops[randomInRange(0, ops.length - 1)];
     const op2 = ops[randomInRange(0, ops.length - 1)];
 
-    // Randomly choose tree structure
-    const isLeftHeavy = Math.random() > 0.5; // true: (L op1 M) op2 R, false: L op1 (M op2 R)
+    const isLeftHeavy = Math.random() > 0.5;
     const requiresParen = doesRequireParentheses(op1, op2, isLeftHeavy);
     
-    // Skip if configuration doesn't allow parentheses but expression requires them
-    if (!config.allowParentheses && requiresParen) continue; 
+    if (!config.allowParentheses && requiresParen) continue;
 
-    // Adjust probability of picking parenthesized expressions if allowed, 
-    // to keep the chance of parentheses roughly balanced.
-    if (config.allowParentheses && !requiresParen && Math.random() > 0.4) {
-        continue;
+    if (config.allowParentheses && !requiresParen && Math.random() > PARENTHESES_PROBABILITY) {
+      continue;
     }
 
     let L = 0, M = 0, R = 0;
     
-    // Pure Rejection Sampling: Generate numbers strictly within the user configured ranges
-    // No artificial bounds tweaking, ensuring mathematical randomness is fair.
+    // Generate numbers within user-configured ranges using pure rejection sampling
     if (isLeftHeavy) {
       if (op1 === '÷') {
          const m = randomInRange(Math.max(1, getRange('÷', config).min), getRange('÷', config).max);
@@ -237,17 +234,15 @@ function generateMixedProblem(config: SessionConfig, existingProblems: Set<strin
       }
     }
 
-    // Construct AST
     const ast: ASTNode = isLeftHeavy 
       ? { type: 'op', op: op2, left: { type: 'op', op: op1, left: { type: 'val', value: L }, right: { type: 'val', value: M } }, right: { type: 'val', value: R } }
       : { type: 'op', op: op1, left: { type: 'val', value: L }, right: { type: 'op', op: op2, left: { type: 'val', value: M }, right: { type: 'val', value: R } } };
 
-    // Evaluate against constraints (carry/borrow, negative numbers, perfect division)
+    // Validate against configuration constraints
     const res = evaluateAST(ast, config);
     if (res.valid) {
       const expression = formatAST(ast, requiresParen, isLeftHeavy);
       
-      // Ensure uniqueness within this batch
       if (existingProblems.has(expression)) continue;
       
       return { 
@@ -261,7 +256,7 @@ function generateMixedProblem(config: SessionConfig, existingProblems: Set<strin
   return null;
 }
 
-// Main problem generator entry point
+// Generate problems based on session configuration
 export function generateProblems(config: SessionConfig): Problem[] {
   const problems: Problem[] = [];
   const enabledOps = config.enabledOperations || ['+'];
@@ -280,7 +275,6 @@ export function generateProblems(config: SessionConfig): Problem[] {
       
       if (config.allow3DigitMixed) {
         problem = generateMixedProblem(config, existingExpressions);
-        // Fallback to single operation if mixed problem generation fails
         if (!problem) problem = generateSingleProblem(enabledOps[i], config, existingExpressions);
       } else {
         problem = generateSingleProblem(enabledOps[i], config, existingExpressions);
@@ -293,11 +287,10 @@ export function generateProblems(config: SessionConfig): Problem[] {
     }
   }
   
-  // Randomize order of generated problems
   return problems.sort(() => Math.random() - 0.5);
 }
 
-// Calculate final score based on correct answers (0-100)
+// Calculate score as percentage (0-100)
 export function calculateScore(correctCount: number, totalCount: number): number {
   if (totalCount === 0) return 0;
   return Math.round((correctCount / totalCount) * 100);

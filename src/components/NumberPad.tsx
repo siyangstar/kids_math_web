@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from './Button';
 import { Delete } from 'lucide-react';
+import { MAX_INPUT_LENGTH } from '../core/math/generator';
 
 interface NumberPadProps {
   value: string;
@@ -16,7 +17,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
   disabled = false,
 }) => {
   const handleNumber = (num: string) => {
-    if (value.length < 6) {
+    if (value.length < MAX_INPUT_LENGTH) {
       onChange(value + num);
     }
   };

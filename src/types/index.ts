@@ -60,38 +60,14 @@ export interface WrongNote {
   wrongHistory: Array<{ answer: number; date: string }>;
 }
 
-// Gamification types
+// User progress types
 export interface UserProgress {
   totalSessions: number;
   totalProblems: number;
   correctProblems: number;
-  currentStreak: number;
-  longestStreak: number;
   totalTime: number;
   points: number;
   level: number;
-  badges: Badge[];
-}
-
-// Badge types
-export type BadgeType = 
-  | 'first_session'
-  | 'perfect_score'
-  | 'streak_3'
-  | 'streak_7'
-  | 'streak_30'
-  | 'problems_100'
-  | 'problems_500'
-  | 'problems_1000'
-  | 'speed_demon'
-  | 'no_mistakes';
-
-export interface Badge {
-  type: BadgeType;
-  name: string;
-  description: string;
-  icon: string;
-  earnedAt?: string;
 }
 
 // Quiz state

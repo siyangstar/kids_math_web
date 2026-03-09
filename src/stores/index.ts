@@ -9,10 +9,9 @@ import {
   UserProgress,
   QuizState,
   DEFAULT_CONFIG,
-  Badge,
   validateConfig,
 } from '../types';
-import { generateProblems, calculateScore } from '../core/math/generator';
+import { generateProblems, calculateScore, LEVEL_POINTS_DIVISOR } from '../core/math/generator';
 import * as storage from '../utils/storage';
 
 interface QuizStore {
@@ -63,17 +62,16 @@ export const useQuizStore = create<QuizStore>()(
       setCurrentAnswer: (answer) => set({ currentAnswer: answer }),
       
       submitAnswer: () => {
-        const { problems, currentIndex, answers, startTime, currentAnswer } = get();
+        const { problems, currentIndex, answers, currentAnswer } = get();
         const problem = problems[currentIndex];
         const userAnswer = parseInt(currentAnswer, 10);
         const isCorrect = !isNaN(userAnswer) && userAnswer === problem.answer;
-        const timeSpent = Math.round((Date.now() - startTime) / 1000);
         
         const answer: Answer = {
           problemId: problem.id,
           userAnswer: isNaN(userAnswer) ? -1 : userAnswer,
           isCorrect,
-          timeSpent,
+          timeSpent: 0,
         };
         
         if (!isCorrect) {
@@ -102,7 +100,6 @@ export const useQuizStore = create<QuizStore>()(
             currentIndex: currentIndex + 1,
             quizState: 'playing',
             currentAnswer: '',
-            startTime: Date.now(),
           });
         } else {
           get().finishQuiz();
@@ -167,25 +164,6 @@ interface ProgressStore {
   progress: UserProgress;
   loadProgress: () => void;
   addPoints: (points: number) => void;
-  incrementStreak: () => void;
-  resetStreak: () => void;
-  addBadge: (badge: Badge) => void;
-}
-
-function checkAndAwardBadges(progress: UserProgress): Badge[] {
-  const newBadges: Badge[] = [];
-  const existingTypes = progress.badges.map(b => b.type);
-  const now = new Date().toISOString();
-  
-  if (progress.totalSessions === 1 && !existingTypes.includes('first_session')) {
-    newBadges.push({ type: 'first_session', name: '初出茅庐', description: '完成第一次练习', icon: '🎯', earnedAt: now });
-  }
-  
-  if (!existingTypes.includes('perfect_score')) {
-    newBadges.push({ type: 'perfect_score', name: '全对达人', description: '获得满分', icon: '⭐', earnedAt: now });
-  }
-  
-  return newBadges;
 }
 
 function updateProgress(result: SessionResult): void {
@@ -197,14 +175,8 @@ function updateProgress(result: SessionResult): void {
     correctProblems: progress.correctProblems + result.correctCount,
     totalTime: progress.totalTime + result.totalTime,
     points: progress.points + result.score,
-    level: Math.floor((progress.points + result.score) / 500) + 1,
-    badges: progress.badges,
+    level: Math.floor((progress.points + result.score) / LEVEL_POINTS_DIVISOR) + 1,
   };
-  
-  const newBadges = checkAndAwardBadges(newProgress);
-  if (newBadges.length > 0) {
-    newProgress.badges = [...newProgress.badges, ...newBadges];
-  }
   
   storage.updateUserProgress(newProgress);
 }
@@ -216,12 +188,9 @@ export const useProgressStore = create<ProgressStore>()(
         totalSessions: 0,
         totalProblems: 0,
         correctProblems: 0,
-        currentStreak: 0,
-        longestStreak: 0,
         totalTime: 0,
         points: 0,
         level: 1,
-        badges: [],
       },
       
       loadProgress: () => {
@@ -231,28 +200,7 @@ export const useProgressStore = create<ProgressStore>()(
       
       addPoints: (points) => {
         const progress = storage.getUserProgress();
-        const newProgress = { ...progress, points: progress.points + points, level: Math.floor((progress.points + points) / 500) + 1 };
-        storage.updateUserProgress(newProgress);
-        set({ progress: newProgress });
-      },
-      
-      incrementStreak: () => {
-        const progress = storage.getUserProgress();
-        const newProgress = { ...progress, currentStreak: progress.currentStreak + 1, longestStreak: Math.max(progress.longestStreak, progress.currentStreak + 1) };
-        storage.updateUserProgress(newProgress);
-        set({ progress: newProgress });
-      },
-      
-      resetStreak: () => {
-        const progress = storage.getUserProgress();
-        const newProgress = { ...progress, currentStreak: 0 };
-        storage.updateUserProgress(newProgress);
-        set({ progress: newProgress });
-      },
-      
-      addBadge: (badge) => {
-        const progress = storage.getUserProgress();
-        const newProgress = { ...progress, badges: [...progress.badges, badge] };
+        const newProgress = { ...progress, points: progress.points + points, level: Math.floor((progress.points + points) / LEVEL_POINTS_DIVISOR) + 1 };
         storage.updateUserProgress(newProgress);
         set({ progress: newProgress });
       },

@@ -1,4 +1,5 @@
 import { SessionResult, WrongNote, UserProgress } from '../types';
+import { MAX_HISTORY_ITEMS } from '../core/math/generator';
 
 const STORAGE_KEYS = {
   SESSION_HISTORY: 'kids_math_history',
@@ -34,7 +35,7 @@ export function getSessionHistory(): SessionResult[] {
 export function addSessionResult(result: SessionResult): void {
   const history = getSessionHistory();
   history.unshift(result);
-  const trimmed = history.slice(0, 100);
+  const trimmed = history.slice(0, MAX_HISTORY_ITEMS);
   setItem(STORAGE_KEYS.SESSION_HISTORY, trimmed);
 }
 
@@ -48,9 +49,25 @@ export function getWrongNotes(): WrongNote[] {
 
 export function addWrongNote(note: WrongNote): void {
   const notes = getWrongNotes();
-  // Always add as a new entry - don't merge
-  // Each wrong answer is a separate entry
-  notes.unshift(note);
+  const existingIndex = notes.findIndex(
+    n => n.problem.expression === note.problem.expression && n.problem.answer === note.problem.answer
+  );
+  
+  if (existingIndex !== -1) {
+    const existing = notes[existingIndex];
+    notes[existingIndex] = {
+      ...existing,
+      userAnswer: note.userAnswer,
+      wrongCount: existing.wrongCount + 1,
+      lastWrongDate: note.lastWrongDate,
+      mastered: false,
+      wrongHistory: [...existing.wrongHistory, { answer: note.userAnswer, date: note.lastWrongDate }],
+    };
+    notes.unshift(notes.splice(existingIndex, 1)[0]);
+  } else {
+    notes.unshift(note);
+  }
+  
   setItem(STORAGE_KEYS.WRONG_NOTES, notes);
 }
 
@@ -73,12 +90,9 @@ export function getUserProgress(): UserProgress {
     totalSessions: 0,
     totalProblems: 0,
     correctProblems: 0,
-    currentStreak: 0,
-    longestStreak: 0,
     totalTime: 0,
     points: 0,
     level: 1,
-    badges: [],
   };
   return getItem<UserProgress>(STORAGE_KEYS.USER_PROGRESS, defaultProgress);
 }
