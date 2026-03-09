@@ -10,7 +10,7 @@ export const ResultPage: React.FC = () => {
   
   const correctCount = answers.filter(a => a.isCorrect).length;
   const totalCount = problems.length;
-  const score = correctCount * 10;
+  const score = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
   
   const handleTryAgain = () => {
     resetQuiz();

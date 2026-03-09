@@ -113,7 +113,7 @@ export const useQuizStore = create<QuizStore>()(
         const { problems, answers, config, startTime } = get();
         const correctCount = answers.filter(a => a.isCorrect).length;
         const totalTime = Math.round((Date.now() - startTime) / 1000);
-        const score = calculateScore(correctCount);
+        const score = calculateScore(correctCount, problems.length);
         
         const result: SessionResult = {
           id: `session_${Date.now()}`,

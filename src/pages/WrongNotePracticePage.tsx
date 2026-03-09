@@ -74,19 +74,19 @@ export const WrongNotePracticePage: React.FC = () => {
     }, 300);
   };
   
-  const finishPractice = (allAnswers: Answer[]) => {
+  const finishPractice = (finalAnswers: typeof answers) => {
     setIsTimerRunning(false);
-    const correctCount = allAnswers.filter(a => a.isCorrect).length;
-    const totalTime = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const score = calculateScore(correctCount);
+    const correctCount = finalAnswers.filter(a => a.isCorrect).length;
+    const totalCount = problems.length;
+    const finalScore = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
     
     navigate('/result', { 
       state: { 
         isWrongNotePractice: true,
         correctCount,
-        totalCount: problems.length,
-        score,
-        totalTime
+        totalCount,
+        score: finalScore,
+        totalTime: Math.round((Date.now() - startTimeRef.current) / 1000)
       } 
     });
   };

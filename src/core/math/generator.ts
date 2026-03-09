@@ -297,7 +297,8 @@ export function generateProblems(config: SessionConfig): Problem[] {
   return problems.sort(() => Math.random() - 0.5);
 }
 
-// Calculate final score based on correct answers
-export function calculateScore(correctCount: number): number {
-  return correctCount * 10;
+// Calculate final score based on correct answers (0-100)
+export function calculateScore(correctCount: number, totalCount: number): number {
+  if (totalCount === 0) return 0;
+  return Math.round((correctCount / totalCount) * 100);
 }
