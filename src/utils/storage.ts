@@ -1,10 +1,9 @@
-import { SessionResult, WrongNote, UserProgress, SessionConfig } from '../types';
+import { SessionResult, WrongNote, UserProgress } from '../types';
 
 const STORAGE_KEYS = {
   SESSION_HISTORY: 'kids_math_history',
   WRONG_NOTES: 'kids_math_wrong_notes',
   USER_PROGRESS: 'kids_math_progress',
-  SESSION_CONFIG: 'kids_math_config',
   VERSION: 'kids_math_version',
 } as const;
 
@@ -87,26 +86,6 @@ export function getUserProgress(): UserProgress {
 export function updateUserProgress(progress: Partial<UserProgress>): void {
   const current = getUserProgress();
   setItem(STORAGE_KEYS.USER_PROGRESS, { ...current, ...progress });
-}
-
-export function getSessionConfig(): SessionConfig {
-  const stored = getItem<SessionConfig | null>(STORAGE_KEYS.SESSION_CONFIG, null);
-  return stored ?? {
-    addition: { min: 1, max: 20 },
-    subtraction: { min: 1, max: 20 },
-    multiplication: { min: 1, max: 10 },
-    division: { min: 1, max: 10 },
-    questionCount: 10,
-    allow3DigitMixed: false,
-    allowParentheses: false,
-    allowCarryBorrow: true,
-    allowNegative: false,
-    enabledOperations: ['+'],
-  };
-}
-
-export function saveSessionConfig(config: SessionConfig): void {
-  setItem(STORAGE_KEYS.SESSION_CONFIG, config);
 }
 
 export function initializeStorage(): void {

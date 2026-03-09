@@ -110,3 +110,34 @@ export const DEFAULT_CONFIG: SessionConfig = {
   allowNegative: false,
   enabledOperations: ['+'],
 };
+
+// Validate and fix configuration
+export function validateConfig(config: SessionConfig): SessionConfig {
+  // Ensure enabledOperations is not empty
+  const enabledOperations = config.enabledOperations && config.enabledOperations.length > 0
+    ? config.enabledOperations
+    : ['+'] as Operation[];
+  
+  // Ensure min < max for all ranges
+  const validateRange = (range: OperationRange): OperationRange => ({
+    min: Math.max(0, Math.min(range.min, range.max - 1)),
+    max: Math.max(range.min + 1, range.max)
+  });
+  
+  // Ensure allowParentheses depends on allow3DigitMixed
+  const allowParentheses = config.allow3DigitMixed ? config.allowParentheses : false;
+  
+  // Ensure questionCount is reasonable
+  const questionCount = Math.max(1, Math.min(100, config.questionCount));
+  
+  return {
+    ...config,
+    addition: validateRange(config.addition),
+    subtraction: validateRange(config.subtraction),
+    multiplication: validateRange(config.multiplication),
+    division: validateRange(config.division),
+    questionCount,
+    enabledOperations,
+    allowParentheses
+  };
+}

@@ -6,7 +6,7 @@ import { useQuizStore } from '../stores';
 
 export const ResultPage: React.FC = () => {
   const navigate = useNavigate();
-  const { problems, answers, resetQuiz } = useQuizStore();
+  const { problems, answers, resetQuiz, startQuiz } = useQuizStore();
   
   const correctCount = answers.filter(a => a.isCorrect).length;
   const totalCount = problems.length;
@@ -14,7 +14,8 @@ export const ResultPage: React.FC = () => {
   
   const handleTryAgain = () => {
     resetQuiz();
-    navigate('/settings');
+    startQuiz();
+    navigate('/quiz');
   };
   
   const handleGoHome = () => {

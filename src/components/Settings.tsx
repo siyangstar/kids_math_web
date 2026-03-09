@@ -147,7 +147,7 @@ export const SettingsComponent: React.FC<SettingsProps> = ({ config, onConfigCha
         <h3 className="text-base sm:text-lg font-semibold text-gray-900">高级选项</h3>
         <Toggle label="允许进位/退位" checked={config.allowCarryBorrow} onChange={(c) => onConfigChange({ ...config, allowCarryBorrow: c })} />
         <Toggle label="允许负数结果" checked={config.allowNegative} onChange={(c) => onConfigChange({ ...config, allowNegative: c })} />
-        <Toggle label="3 位数混合运算" checked={config.allow3DigitMixed} onChange={(c) => onConfigChange({ ...config, allow3DigitMixed: c, allowParentheses: c ? config.allowParentheses : false })} description="包含更复杂的混合运算" />
+        <Toggle label="3 个数字混合运算" checked={config.allow3DigitMixed} onChange={(c) => onConfigChange({ ...config, allow3DigitMixed: c, allowParentheses: c ? config.allowParentheses : false })} description="使用 3 个数字进行混合运算（如：5 + 3 - 2）" />
         {config.allow3DigitMixed && (
           <div className="ml-3 sm:ml-4 pl-3 sm:pl-4 border-l-2 border-indigo-600">
             <Toggle label="括号运算" checked={config.allowParentheses} onChange={(c) => onConfigChange({ ...config, allowParentheses: c })} description="包含括号的运算表达式" />

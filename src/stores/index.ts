@@ -10,6 +10,7 @@ import {
   QuizState,
   DEFAULT_CONFIG,
   Badge,
+  validateConfig,
 } from '../types';
 import { generateProblems, calculateScore } from '../core/math/generator';
 import * as storage from '../utils/storage';
@@ -44,7 +45,7 @@ export const useQuizStore = create<QuizStore>()(
       startTime: 0,
       currentAnswer: '',
       
-      setConfig: (config) => set({ config }),
+      setConfig: (config) => set({ config: validateConfig(config) }),
       
       startQuiz: () => {
         const { config } = get();
