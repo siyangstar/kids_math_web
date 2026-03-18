@@ -132,8 +132,7 @@ export const useQuizStore = create<QuizStore>()(
           score,
         };
         
-        storage.addSessionResult(result);
-        updateProgress(result);
+        recordSessionResult(result);
         set({ quizState: 'finished' });
         
         return result;
@@ -177,6 +176,11 @@ interface ProgressStore {
   progress: UserProgress; // 用户进度数据
   loadProgress: () => void; // 加载进度
   addPoints: (points: number) => void; // 添加积分
+}
+
+export function recordSessionResult(result: SessionResult): void {
+  storage.addSessionResult(result);
+  updateProgress(result);
 }
 
 // 更新用户学习进度

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { useWrongNoteStore, useQuizStore } from '../stores';
+import { recordSessionResult, useWrongNoteStore, useQuizStore } from '../stores';
 import { NumberPad } from '../components/NumberPad';
 import { ProgressBar } from '../components/ProgressBar';
 import { Timer } from '../components/Timer';
 import { Button } from '../components/Button';
-import { Problem, Answer } from '../types';
+import { Problem, Answer, SessionResult, WrongNote } from '../types';
 import { calculateScore } from '../core/math/generator';
 
 export const WrongNotePracticePage: React.FC = () => {
@@ -15,6 +15,7 @@ export const WrongNotePracticePage: React.FC = () => {
   const { config } = useQuizStore();
   
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [practiceNotes, setPracticeNotes] = useState<WrongNote[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
@@ -27,18 +28,17 @@ export const WrongNotePracticePage: React.FC = () => {
   
   useEffect(() => {
     const activeNotes = wrongNotes.filter(n => !n.mastered);
-    const wrongProblems = activeNotes.map(n => n.problem).slice(0, config.questionCount);
+    const selectedNotes = activeNotes.slice(0, config.questionCount);
+    const wrongProblems = selectedNotes.map(n => n.problem);
     
-    if (wrongProblems.length < config.questionCount) {
-      const needed = config.questionCount - wrongProblems.length;
-      for (let i = 0; i < needed && i < activeNotes.length; i++) {
-        wrongProblems.push(activeNotes[i % activeNotes.length].problem);
-      }
-    }
-    
+    setPracticeNotes(selectedNotes);
     setProblems(wrongProblems);
+    setCurrentIndex(0);
+    setAnswers([]);
+    setCurrentAnswer('');
+    setIsSubmitting(false);
     startTimeRef.current = Date.now();
-    setIsTimerRunning(true);
+    setIsTimerRunning(wrongProblems.length > 0);
   }, [wrongNotes, config.questionCount]);
   
   useEffect(() => {
@@ -77,16 +77,35 @@ export const WrongNotePracticePage: React.FC = () => {
   const finishPractice = (finalAnswers: typeof answers) => {
     setIsTimerRunning(false);
     const correctCount = finalAnswers.filter(a => a.isCorrect).length;
-    const totalCount = problems.length;
-    const finalScore = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+    const totalTime = Math.round((Date.now() - startTimeRef.current) / 1000);
+    const score = calculateScore(correctCount, problems.length);
+    const masteredNoteIds = finalAnswers
+      .filter(answer => answer.isCorrect)
+      .map(answer => practiceNotes.find(note => note.problem.id === answer.problemId)?.id)
+      .filter((id): id is string => Boolean(id));
+
+    const result: SessionResult = {
+      id: `wrong_note_session_${Date.now()}`,
+      date: new Date().toISOString(),
+      config: {
+        ...config,
+        questionCount: problems.length,
+      },
+      problems,
+      answers: finalAnswers,
+      correctCount,
+      totalTime,
+      score,
+    };
     
-    navigate('/result', { 
+    recordSessionResult(result);
+    
+    navigate(`/result?resultId=${encodeURIComponent(result.id)}&mode=wrong-note`, { 
       state: { 
         isWrongNotePractice: true,
-        correctCount,
-        totalCount,
-        score: finalScore,
-        totalTime: Math.round((Date.now() - startTimeRef.current) / 1000)
+        result,
+        resultId: result.id,
+        pendingMasteredNoteIds: masteredNoteIds,
       } 
     });
   };
