@@ -175,7 +175,7 @@ export const WrongNotesPage: React.FC = () => {
       entries.forEach(entry => removeWrongNote(entry.id));
     }
   };
-  
+
   const handleMasteredGroup = (entries: WrongNote[]) => {
     entries.forEach(entry => markAsMastered(entry.id));
   };

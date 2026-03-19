@@ -25,6 +25,7 @@ interface QuizStore {
   startTime: number; // 开始时间
   currentAnswer: string; // 当前输入的答案
   startQuiz: () => void; // 开始测验
+  startQuizWithProblems: (problems: Problem[], config?: SessionConfig) => void; // 使用指定题目开始测验
   setCurrentAnswer: (answer: string) => void; // 设置当前答案
   submitAnswer: () => void; // 提交答案
   nextProblem: () => void; // 下一题
@@ -54,6 +55,19 @@ export const useQuizStore = create<QuizStore>()(
         const { config } = get();
         const problems = generateProblems(config);
         set({
+          quizState: 'playing',
+          problems,
+          currentIndex: 0,
+          answers: [],
+          startTime: Date.now(),
+          currentAnswer: '',
+        });
+      },
+      
+      // 使用指定题目开始测验
+      startQuizWithProblems: (problems, nextConfig) => {
+        set({
+          config: nextConfig ? validateConfig(nextConfig) : get().config,
           quizState: 'playing',
           problems,
           currentIndex: 0,

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, X, Clock, Trophy, ChevronRight, Eraser, Trash2, XCircle } from 'lucide-react';
-import { useHistoryStore } from '../stores';
+import { useHistoryStore, useQuizStore } from '../stores';
 import { Button } from '../components/Button';
 import { SessionResult } from '../types';
 
 const HistoryDetailModal: React.FC<{
   session: SessionResult;
   onClose: () => void;
-}> = ({ session, onClose }) => {
+  onRetry: (session: SessionResult) => void;
+}> = ({ session, onClose, onRetry }) => {
   const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('zh-CN', { 
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
@@ -71,6 +72,9 @@ const HistoryDetailModal: React.FC<{
               );
             })}
           </div>
+          <div className="mt-6 flex justify-end">
+            <Button variant="primary" size="md" onClick={() => onRetry(session)}>重新练习这一组</Button>
+          </div>
         </div>
       </div>
     </div>
@@ -79,6 +83,7 @@ const HistoryDetailModal: React.FC<{
 
 export const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const { startQuizWithProblems } = useQuizStore();
   const { history, loadHistory, clearAllHistory, removeHistoryItems } = useHistoryStore();
   const [selectedSession, setSelectedSession] = useState<SessionResult | null>(null);
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -130,6 +135,15 @@ export const HistoryPage: React.FC = () => {
   const exitSelectMode = () => {
     setIsSelectMode(false);
     setSelectedIds(new Set());
+  };
+  
+  const handleRetrySession = (session: SessionResult) => {
+    startQuizWithProblems(session.problems, {
+      ...session.config,
+      questionCount: session.problems.length,
+    });
+    setSelectedSession(null);
+    navigate('/quiz');
   };
   
   return (
@@ -267,7 +281,7 @@ export const HistoryPage: React.FC = () => {
       </div>
       
       {selectedSession && (
-        <HistoryDetailModal session={selectedSession} onClose={() => setSelectedSession(null)} />
+        <HistoryDetailModal session={selectedSession} onClose={() => setSelectedSession(null)} onRetry={handleRetrySession} />
       )}
     </div>
   );
