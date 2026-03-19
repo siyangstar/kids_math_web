@@ -138,9 +138,10 @@ export const HistoryPage: React.FC = () => {
   };
   
   const handleRetrySession = (session: SessionResult) => {
-    startQuizWithProblems(session.problems, {
+    const shuffledProblems = [...session.problems].sort(() => Math.random() - 0.5);
+    startQuizWithProblems(shuffledProblems, {
       ...session.config,
-      questionCount: session.problems.length,
+      questionCount: shuffledProblems.length,
     });
     setSelectedSession(null);
     navigate('/quiz');
