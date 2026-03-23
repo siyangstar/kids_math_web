@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Target, Settings, History, FileText, Star, Trophy, Zap, Flame } from 'lucide-react';
+import { Play, Target, Settings, History, FileText, Star, Trophy, Zap, Flame, CalendarDays } from 'lucide-react';
 import { Button } from '../components/Button';
 import { useProgressStore, useQuizStore, useWrongNoteStore } from '../stores';
 import { LEVEL_POINTS_DIVISOR } from '../core/math/generator';
+import { getTodayProblems } from '../utils/storage';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ export const HomePage: React.FC = () => {
   const accuracy = progress.totalProblems > 0 
     ? Math.round((progress.correctProblems / progress.totalProblems) * 100) 
     : 0;
+  const todayProblems = getTodayProblems();
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,7 +65,15 @@ export const HomePage: React.FC = () => {
         </div>
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-3 md:mb-4">
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 md:gap-3 mb-2 sm:mb-3 md:mb-4">
+          <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 shadow-sm border border-gray-100 text-center">
+            <div className="flex items-center justify-center mb-0.5 sm:mb-1">
+              <CalendarDays className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-sky-500" />
+            </div>
+            <div className="text-base sm:text-xl md:text-2xl font-bold text-gray-900">{todayProblems}</div>
+            <div className="text-[9px] sm:text-[10px] md:text-xs text-gray-600">今日练习</div>
+          </div>
+
           <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 shadow-sm border border-gray-100 text-center">
             <div className="flex items-center justify-center mb-0.5 sm:mb-1">
               <Star className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 text-indigo-600" />

@@ -147,7 +147,7 @@ export const WrongNotePracticePage: React.FC = () => {
               第 {currentIndex + 1} / {problems.length} 题
             </span>
           </div>
-          <div className="text-center">
+          <div key={currentIndex} className="animate-slide-in text-center">
             <div className="text-3xl sm:text-4xl font-semibold text-[var(--color-text-primary)]">
               {problem.expression} = <span className="text-[var(--color-primary)]">{currentAnswer || '?'}</span>
             </div>

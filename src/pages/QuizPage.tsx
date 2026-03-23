@@ -81,7 +81,7 @@ export const QuizPage: React.FC = () => {
               第 {prog.current} / {prog.total} 题
             </span>
           </div>
-          <div className="text-center">
+          <div key={prog.current} className="animate-slide-in text-center">
             <div className="text-3xl sm:text-4xl font-semibold text-[var(--color-text-primary)]">
               {problem.expression} = <span className="text-[var(--color-primary)]">{currentAnswer || '?'}</span>
             </div>

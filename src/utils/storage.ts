@@ -134,6 +134,14 @@ export function updateUserProgress(progress: Partial<UserProgress>): void {
   setItem(STORAGE_KEYS.USER_PROGRESS, { ...current, ...progress });
 }
 
+// 获取今日练习题目总数
+export function getTodayProblems(): number {
+  const today = new Date().toDateString();
+  return getSessionHistory()
+    .filter(s => !s.id.startsWith('wrong_note_session_') && new Date(s.date).toDateString() === today)
+    .reduce((sum, s) => sum + s.problems.length, 0);
+}
+
 // 清空所有历史记录
 export function clearAllHistory(): void {
   removeItem(STORAGE_KEYS.SESSION_HISTORY);
